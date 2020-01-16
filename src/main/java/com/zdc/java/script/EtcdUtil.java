@@ -7,7 +7,10 @@ import com.coreos.jetcd.data.KeyValue;
 import com.coreos.jetcd.watch.WatchEvent;
 
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by zhudongchang on 2018/8/3.
@@ -23,43 +26,33 @@ public class EtcdUtil {
         return client;
     }
 
-    private static final ExecutorService executorService= new ThreadPoolExecutor(0,
-            10000,0L, TimeUnit.SECONDS,new SynchronousQueue<>());
+    private static final ExecutorService executorService = new ThreadPoolExecutor(0,
+            10000, 0L, TimeUnit.SECONDS, new SynchronousQueue<>());
 
-    public static void listen(String path,ListenCallBack listenCallBack) {
-        listen(path, new CallBack() {
-            @Override
-            public void run(WatchEvent watchEvent) {
-                listenCallBack.run(watchEvent.getKeyValue().getValue().toStringUtf8());
-            }
-        });
+    public static void listen(String path, ListenCallBack listenCallBack) {
+        listen(path, (CallBack) watchEvent -> listenCallBack.run(watchEvent.getKeyValue().getValue().toStringUtf8()));
     }
 
 
-    public static void listen(String path,CallBack callBack) {
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                Watch.Watcher watcher = EtcdUtil.getEtclClient().getWatchClient().watch(ByteSequence.fromString(path));
-                try {
-                    for (WatchEvent watchEvent : watcher.listen().getEvents()) {
-                        executorService.execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                callBack.run(watchEvent);
-                                listen(path,callBack);
-                            }
-                        });
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+    public static void listen(String path, CallBack callBack) {
+        executorService.execute(() -> {
+            Watch.Watcher watcher = EtcdUtil.getEtclClient().getWatchClient().watch(ByteSequence.fromString(path));
+            try {
+                for (WatchEvent watchEvent : watcher.listen().getEvents()) {
+                    executorService.execute(() -> {
+                        callBack.run(watchEvent);
+                        listen(path, callBack);
+                    });
                 }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         });
     }
 
     /**
      * 根据指定的配置名称获取对应的value
+     *
      * @param key 配置项
      * @return
      * @throws Exception
@@ -76,6 +69,7 @@ public class EtcdUtil {
 
     /**
      * 新增或者修改指定的配置
+     *
      * @param key
      * @param value
      * @return
@@ -87,6 +81,7 @@ public class EtcdUtil {
 
     /**
      * 删除指定的配置
+     *
      * @param key
      * @return
      */
@@ -95,11 +90,11 @@ public class EtcdUtil {
 
     }
 
-    interface ListenCallBack{
+    interface ListenCallBack {
         void run(String data);
     }
 
-    interface CallBack{
+    interface CallBack {
         void run(WatchEvent watchEvent);
     }
 }

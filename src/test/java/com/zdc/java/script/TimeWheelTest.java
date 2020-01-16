@@ -19,17 +19,17 @@ import java.util.concurrent.TimeUnit;
 public class TimeWheelTest {
 
     @Before
-    public void before(){
+    public void before() {
     }
 
     @Test
     public void timer() throws InterruptedException {
-        Timer time=new Timer();
-        System.out.println("      start:"+new Date());
+        Timer time = new Timer();
+        System.out.println("      start:" + new Date());
         time.schedule(new TimerTask() {
             @Override
             public void run() {
-                System.out.println("task1 start:"+new Date());
+                System.out.println("task1 start:" + new Date());
 
                 throw new RuntimeException("aaa");
 //                try {
@@ -38,15 +38,15 @@ public class TimeWheelTest {
 //                    e.printStackTrace();
 //                }
             }
-        },1000);
+        }, 1000);
 
 
         time.schedule(new TimerTask() {
             @Override
             public void run() {
-                System.out.println("task2 start:"+new Date());
+                System.out.println("task2 start:" + new Date());
             }
-        },2000);
+        }, 2000);
 
         Thread.sleep(Integer.MAX_VALUE);
     }
@@ -55,32 +55,29 @@ public class TimeWheelTest {
     @Test
     public void ScheduledExecutorService() throws InterruptedException {
         ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(2);
-        System.out.println("      start:"+new Date());
+        System.out.println("      start:" + new Date());
 
-        executorService.schedule(new Runnable() {
-            @Override
-            public void run() {
-                System.out.println("task1 start:"+new Date());
-                throw new RuntimeException("aaa");
+        executorService.schedule((Runnable) () -> {
+            System.out.println("task1 start:" + new Date());
+            throw new RuntimeException("aaa");
 //                try {
 //                    Thread.sleep(4000);
 //                } catch (InterruptedException e) {
 //                    e.printStackTrace();
 //                }
-            }
-        },1000, TimeUnit.MILLISECONDS);
+        }, 1000, TimeUnit.MILLISECONDS);
 
         executorService.schedule(new Runnable() {
             @Override
             public void run() {
-                System.out.println("task2 start:"+new Date());
+                System.out.println("task2 start:" + new Date());
                 try {
                     Thread.sleep(4000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-        },2000, TimeUnit.MILLISECONDS);
+        }, 2000, TimeUnit.MILLISECONDS);
 
 
         Thread.sleep(Integer.MAX_VALUE);
@@ -89,32 +86,26 @@ public class TimeWheelTest {
 
     @Test
     public void TimeWheel() throws InterruptedException {
-        TimeWheelService instance = TimeWheelService.instance;
-        System.out.println("      start:"+new Date());
-        instance.schedule(new Runnable() {
-            @Override
-            public void run() {
-                System.out.println("task1 start:"+new Date());
+        TimeWheelService instance = new TimeWheelService(5);
+        System.out.println("      start:" + new Date());
+        instance.schedule(() -> {
+            System.out.println("task1 start:" + new Date());
 //                throw new RuntimeException("aaa");
-                try {
-                    Thread.sleep(4000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+            try {
+                Thread.sleep(4000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        },1000);
+        }, 1000);
 
-        instance.schedule(new Runnable() {
-            @Override
-            public void run() {
-                System.out.println("task2 start:"+new Date());
-                try {
-                    Thread.sleep(4000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+        instance.schedule(() -> {
+            System.out.println("task2 start:" + new Date());
+            try {
+                Thread.sleep(4000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        },2000);
+        }, 2000, 1000);
 
 
         Thread.sleep(Integer.MAX_VALUE);
